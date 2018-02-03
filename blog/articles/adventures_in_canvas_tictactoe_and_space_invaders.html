@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: Adventures In Canvas: Tic-tac-toe and Space Invaders</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">Adventures In Canvas: Tic-tac-toe and Space Invaders</h2>
+<div id="article-date">1-25-2015</div>
+<p> </p><p>One of the more interesting developments in recent years concerning HTML 5 is the <code>&lt;canvas&gt;</code> tag. This tag essentially provides a framebuffer (referred to as a "drawing context" in the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API">MDN articles</a>) and supports a simple 2d rendering context and, perhaps the more impressive, OpenGL rendering context, complete with support for sharders. </p><p>Perhaps the biggest use I've seen for the <code>&lt;canvas&gt;</code> tag thus far is making games playable through the web browser. Yes, we no longer need a pesky plugin, a la Adobe Flash, to make games available to the internet masses. Instead we can use what so many already have built into their browsers, a Javascript interpreter. The API is quite simple to work with, particularly if you use the 2d rendering context. Having in interest in game development myself, I decided to take this opportunity to create 2 simple games to learn this growingly important API. </p><p>The first game I decided to create is <a href="/static/js/tictactoe/index.html">tic-tac-toe</a> (the repo is available <a href="https://github.com/bogosortist/canvas-tic-tac-toe">here</a>). With no real time elements to worry about, or even a clock needed to keep the frame-rate steady, it's implementation is fairly straight foward. I chose to use the 2d rendering context instead of the OpenGL as I wanted the game to be playable on all browsers regardless of whether or not they support OpenGL, that and I didn't need 3d acceleration. The 2d rendering context behaves similar to SDL's default 2d drawing buffer. For the uninitated, SDL's 2d drawing buffer behaves like a cartesian coordinate plane, by which you specify a set of coordinates to draw at a given position on the screen. The origin of this coordinate system is located on the upper left hand side of the buffer. Coordinate values increase right and downward for the X and Y axes respectively. </p><p>A <code>box</code> or <code>rectangle</code> class is a fairly standard structure/class seen in video game programming. Often integegrated into a <code>Sprite</code>, the <code>box</code> helps us keep track of an object's position and provides us a convenient way determine the proximity of other objects realtive to it in "World Space". I based my implementation on a class called <code>Rect</code> from the <a href="http://www.pygame.org/news.html">Pygame library</a>. In addition to having methods to calculate the x and y coordinates of the virtual box's sides and center point, the most notable method this class has to offer is the <code>hasCollided</code> method. </p><p><code>hasCollided</code> offers us a way to perform "collision detection", which basically means determining whether or not a given game entity has come into contact with another entity in the game. In the case of Tic-tac-toe, we use it to determine whether not a space has been clicked. The method is used internally by the <code>GameSquare</code> method, essentially acting as our <code>Sprite</code> class and setting the mark according to the current turn. </p><p>The <code>Board</code> class is essentially a two-dimensional array that keeps track of the game's state as well as checking for any winning possible combinations (a completed row, a completed column, or completed diagonal containing the same symbol). While it's pretty standard stuff, one thing I am particularly happy about is how I went about checking the diagonals. With the help of the useful <a href="https://lodash.com/">lodash library</a>, I was able to shorten the code quite a bit and make things a bit more general (a game of tic-tac-toe can be played on something larger than a 3x3 grid, just change the row size). </p><p>Originally I had wanted to simply to foldl/reduce the values for the row and column checks, however things ended up a bit more complicated, than the more straight foward for loop. For the diagonals however, I was able to apply a functional programming technique called <em>currying</em>. <em>Currying</em> is a method of creating a new function based on another function with some of it's arguments already in place. To demonstrate let us examine the following function <code>greeting</code> </p><p><code class="javascript"> </p><pre><code>//Greet a user with a custom greeting  
+ 
+var greeting = function(opener, username) {  
+    return (opener + " " + username);  
+} </code></pre><p></code> </p><p>While writing the rest of our code we realize notice that our <code>greeting</code> function is frequently called with the words "salutations" and "hello" for the <code>opener</code> argument. Being too lazy to constantly type out <code>greeting("salutations", someUser)</code> or <code>greeting("hello", someUser)</code> all the time, we decide to create a function to eliminate the need to type out the first argument. One way we could do this is by taking advantage of closures and simply calling greeting internally and returning the new value like so. </p><p><code class="javascript"> </p><pre><code>//Salutations  
+var salute = function(username) {  
+    return greeting("salutations", username);  
+};  
+ 
+//Hello  
+var hello = function(username) {  
+    return greeting("hello", username);  
+}; </code></pre><p></code> </p><p>While this works fine, Javascript provides a method much more suited for the job, <code>bind</code>. The function <code>bind</code> takes a variable number of arguments, the first being what the keyword <code>this</code> is bound to, and the remaining arguments are arguments used to call the function from left to right. The <code>bind</code> function then returns a new function that takes <em>n-m</em> arguments, where <em>n</em> is the arity of the original function and <em>m</em> is the number of arguments we passed to bind. This elegantly accomplishes our goal of shortening our function call in a single line. </p><p><code class="javascript"> </p><pre><code>//Salutations  
+var salute = greetings.bind(this, "salutations"); //salute("some guy") =&gt; "salutations some guy"  
+ 
+//Hello  
+var hello = greetings.bind(this, "hello"); //hello("some guy") =&gt; "hello some guy" </code></pre><p></code> </p><p>Pretty nifty if I do say so myself. </p><p>The lodash library provides a way to create partial functions that apply arguments from right to left. Seeing as how diagonals are checked either by traversing the rows and columns incrementing them one at a time for the case going left-to-right or doing a sort of inversion of the row and column count, I create a partial function based on lodash's own <code>forEach</code> function. The <code>forEach</code> function takes three arguments, an iterable, a function to applied to each item of the iterable, and finally the binding for the <code>this</code> keyword. Given that the function to be run can be generalized for both the left-to-right and right-to-left case, the only thing that really differs is the range of index values we wish to traverse the array of squares at. As such I defined the check diagonals as such </p><p><code class="javascript"> </p><pre><code>var checkDiags = function(type) {  
+    var winner = "";  
+    var initialSymbol = (type === "forward") ? self.squareCollection[0][0].symbol : self.squareCollection[self.rowSize-1][0].symbol;  
+    var accumulator = true;  
+    var forEachPartial = _.partialRight(_.forEach, function(i) {  
+        if (!_.isEmpty(initialSymbol)) {  
+            var check = (type === "forward") ? self.squareCollection[i][i].symbol : self.squareCollection[i][Math.abs((self.rowSize-1)-i)].symbol;  
+            accumulator = ((initialSymbol === check) &amp;&amp; accumulator);  
+        }  
+    });  
+ 
+    if (type === "forward") {  
+        forEachPartial(_.range(self.rowSize));  
+    } else {  
+        forEachPartial(_.range((self.rowSize-1), -1, -1));  
+    }  
+ 
+    if (accumulator) {  
+        winner = initialSymbol;  
+    };  
+    return winner;  
+}; </code></pre><p></code> </p><p>The only other notable thing in the code is how mouse clicks are handled. The x and y coordinates of a users click differs between browsers. Every browser, except for Firefox provides the x and y cordinates through similarly named attributes in the object itself. For Firefox users we must use the clientX and clientY, which unfortunately is affected by the the scroll position as well as any sort of offset we place on the <code>&lt;canvas&gt;</code> element itself. Luckily, we live in a time where stack overflow exists and found <a href="https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element">this solution</a> </p><p>With this prototype out of the way I wanted to try something a bit more challenging. Seeing that I had some assets lying around from an old Space Invaders project, I decided to recreate the arcade classic using <code>&lt;canvas&gt;</code> and plain old Javascript. You can play the game <a href="/static/js/spaceinvaders/index.html">here</a> and see the code repository <a href="https://github.com/bogosortist/space-invaders-canvas">here</a>. </p><p>One of the most important things in game programming is to ensure that the framerate is stable. Some game programming libraries have their own clock implementations (<em>e.g.</em> <a href="http://www.pygame.org/docs/ref/time.html">pygame.time</a>) and others require you to roll your own, the <code>window</code> object in Javascript provides the <code>requestAnimationFrame</code> function which registers a callback function. </p><p>With turn based games, without any sort of animated objects like tic-tac-toe we can get away with just using one canvas. However when you add moving pieces to the mix things get slightly more complicated. Simply changing the x and y coordinates of our object and redrawing it would cause a sort of ghost trail of our game object. The remedy to this we simply "clear" the canvas by redrawing our background or blanking out our screen with a single color before redrawing our game object. However, there in lies another problem. </p><p>In the tic-tac-toe game I used a single canvas, which was only updated every time a move was made. This is in stark contrast to Space Invaders, where objects  move constantly, and in turn, update constantly, redrawing the background and and then the sprite. This causes an a weird flickering effect that's more annoying than anything else. To deal with this problem, game programmers often employ a technique known as double buffering. </p><p>As the name implies, double buffering employs the use of two graphic buffers. The first is displayed to the player, while the other is hidden from the player. The new, updated scene is drawn onto the hidden buffer, so that when the next frame is requested, we simply replace the visible buffer with the hidden buffer allowing for a smooth transition without any flicker. In Javascript, this means having two canvas objects. To help manage the buffers I created a <code>Display</code> object which provides a nice API that guarantees that the correct buffer is being drawn to. </p><p>Aside from the myriad of classes representing the different entities in the game, one class that's particularly interesting is the <code>SpriteGroup</code> class. I originally created the <code>SpriteGroup</code> class to help me manage the rather peculiar behavior of the enemy entities. While the enemy entities have their own methods to manage collision detection and positional updates, as a group, they really act as a single unified entity. This is really apparent in deciding when to move left, right, or downward. The <code>SpriteGroup</code> holds an array of game entities of a single type. Given this, we can expect a unified API when dealing with the underlying entities. Thusly, the most interesting function in this class is the <code>dispatch</code> function which calls a given method of a given class. </p><p><code class="javascript"> </p><pre><code>var SpriteGroup = function(roster) {  
+ 
+    this.spriteRoster = roster;  
+ 
+    this.dispatch = function(spriteFunction, argList) {  
+        return _.map(this.spriteRoster, function(sprite) {  
+            return sprite[spriteFunction].apply(sprite, argList);  
+        });  
+    };  
+    ...  
+}; </code></pre><p></code> </p><p>Taking advantage of the fact we can access any attribute, including class methods, in an object's prototype via the <code>[]</code> operator we can pass the function we wish to call as a string. Given that we don't know how many arguments a given function will take we use the ever useful <code>apply</code> function. The <code>apply</code> function calls the function with the values supplied to it as an array. This very simple function allows us to go from this: </p><p><code class="javascript"> </p><pre><code>spriteGroup.roster.forEach(function(item) { item.doSomething(arg1, arg2, arg3); };  
+spriteGroup.roster.forEach(function(item) { item.doSomethingElse(arg1, arg2); }; </code></pre><p></code> </p><p>to this: </p><p><code class="javascript"> </p><pre><code>spriteGroup.dispatch("doSomething", [arg1, arg2, arg3]);  
+spriteGroup.dispatch("doSomethingElse", [arg1, arg2]); </code></pre><p></code> </p><p>If you wanted to take it a step further, you could apply the <code>currying</code> technique mentioned earlier in this post to allow for something like: </p><p><code class="javascript"> </p><pre><code>var doSomething = spriteGroup.dispatch.bind(this, "doSomething");  
+var doSomethingElse = spriteGroup.dispatch.bind(this, "doSomethingElse");  
+ 
+...  
+ 
+//Some where else in the code  
+doSomething([arg1, arg2, arg3]);  
+doSomethingElse([arg1,arg2,arg3]); </code></pre><p></code> </p><p>Which be pretty useful if you wish to expose some method in a specialized sprite group, which is more convenient than forcing the programmer to know that the underlying entity the <code>SpriteGroup</code> is representing has a method called <code>doSomething</code> or <code>doSomethingElse</code>. </p><p>Images are handled much in the same way you would handle them in plain old HTML, with an <code>Image</code> DOM element. Sounds, on the other hand, are handled with the help of the new <code>Audio</code> DOM element. I created a small wrapper object to help manage the sounds. </p><p>While tic-tac-toe was essentially a one screen game, Space Invaders has several screens, an intro screen, the main game screen, and a game over screen when you run out of lives. Throw in the fact that each screen has it's own controls , and things get slightly more complicated. However, this can be managed with a simple switch statement. </p><p>Overall I'm pretty happy with the result. One huge improvement I could've implemented was the use of a sprite sheet. Given that the original assets are actual, phsyical cut outs of construction paper, I didn't really feel like combining all the sprites into one sheet and manipulating what section of the sprite sheet to display. In all a fun set of projects to learn Canvas on. I can definitely see this being a big thing in the future of web development. </p>
+<nav id="article-nav">
+    
+    <a href="/articles/static_noise.html">Previously on Optimised Bogosort! Static Noise!</a>
+    
+    <br/><br/>
+    
+    <a href="/articles/socket_to_me_io.html">Next time on Optimised Bogosort! Socket To Me IO!</a>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>

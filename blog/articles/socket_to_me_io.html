@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: Socket To Me IO</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">Socket To Me IO</h2>
+<div id="article-date">2-13-2015</div>
+<p> </p><p><em> EDIT (03-25-2014) : Due to the fact I have not received any sort of correspondance from IDW Games, I am unable to secure any sort of right to make the boardgame Machikoro available for users online. The code for this project was salvaged and used in a project the same goal of creating a turn-based, multiplayer game with Socket.IO. The write up for the follow-up project, with links to play the game are available <a href="/articles/dots_and_boxes.html">in this artile</a>. The original code for this project has been removed from Github, however the snippets here remain in place since it is not the complete game. </em>  </p><p>Recently, I've been playing a board game called <a href="http://idwgames.com/machi-koro/">Machikoro</a> quite a bit. The game plays like a faster, stream lined version of <a href="http://www.catan.com/">Settlers of Catan</a>. Players try to build a city using money they gain from buildings that "activate" at certain dice rolls. I was inspired to write and recreate the boardgame experience online because many of friends are either out of state or unavailable to meet up to play. </p><p><a href="http://socket.io/">Socket.IO</a> is an implementation of the web socket protocol with fallbacks to Adobe Flash's socket if a browser doesn't happen to support it. The cool thing about web sockets is that they allow for real time web apps without the need to do long polling which is, as the name implies, constantly hitting the web server looking for a response. Instead, web sockets allow a programmer to push messages to the client just like a normal unix socket. </p><p>I would like this implementation to include a lobby so that multiple parties can play the game at the same time. While I am not entirely sure how to implement something like that I decided to start off simple by creating a game where only one group of people can play the game at a time. </p><p>With modern tools at our disposal setting up an applications that use web sockets has never been easier. There are two parts to a web socket application, the application server, which can be anything web server that supports web sockets, like <a href="https://github.com/3b/clws">clws</a> or <a href="http://socket.io/">Socket.IO</a> and a client script that allows the browsers to open a socket connection. For Socket.IO, this process is fairly straight forward. Simply run the <code>io.on</code> function to listen into the <code>connection</code> signal and provide a function that provides a socket. On the client side, simply include the <code>socket.io.js</code> script which is automatically provided by the socket.io server then call the <code>io</code> function with the url to the server. This will in turn give you a web socket client reference. </p><p>At this point passing messages between the client and the server is pretty straight forward. The client calls the <code>emit</code> message with the signal name and a JSON object with data to be sent over. </p><p>I am using Socket.IO with the <a href="http://expressjs.com/">ExpressJS</a> framework. Unlike the normal routes you would need to set up with Express, Socket.IO requires no such set up as it pretty much acts as it's own entity. </p><p>On the UI side of things I decided to use the <a href="https://lhorie.github.io/mithril/">Mithril client-side MVC framework</a> for it's simplicity. That and I have previous experience working with it from work. Mithril is very straight forward. An application only requires two classes to function, a controller and a view. Models, while optional, are quite useful for the obvious reason in that they keep data consistent between the client and server. On the client side I set up a few models to represent some of the game objects I expect recieve information from the  server, such as player information. I also setup a client exclusive model to keep track of events that occur at the table, which is basically a normal Javascript array used as a queue. </p><p>The interesting thing about Mithril is the framework's <a href="https://lhorie.github.io/mithril/getting-started.html">starter guide</a> suggests creating a <code>ViewModel</code> object to store the application's state. This is due to the fact that the client side of the application doesn't have to do any sort of data marshalling between the models defined on the client side to some sort of other representation of data <em>e.g.</em> from a JSON object to a Common Lisp property list. The controller, in many cases, seems to be used either as a simple initiator for the ViewModel object, or in the case of a stand alone module, to expose some sort of API to the ViewModel object in the context of a larger application. </p><p>Mithril exposes itself to the DOM via the <code>module</code> function, accepting an object containing a controller and view attribute. This means that Mithril only accepts one view for the whole application. Given I needed multiple screens in the long run one for the lobby, one for the game, and a few others for creating tables this seemed to be problematic at first. However an easy work around is to combine all of the screens into a single view and hiding and revealing block elements with the ever handy <code>display</code> CSS property. </p><p>Mithril views is a Virtual DOM created by calling the <code>m</code> function which takes a string representing a <code>css</code> selector, much like jQuery (or sizzle if you wnat to get technical), an optional object containing HTML attributes, a string for a text node, and an array of child objects. The optional object is the key here in creating a multi-screen UI as it can be passed the <code>display</code> property via the <code>style</code> attribute. To help manage a screen's visibility as well as the visibility other UI elements, such as button panels, I decided to create a closure that represents which screen to display. The function returned took one required argument and an optional argument used to change the screen. In the case of checking whether or not a screen should be displayed the user simply passes the name of the screen as a string. The second argument is a simple boolean, which if true, changes the closed over variable keeping the state of the currently visible screen. </p><p><code class="javascript"> </p><pre><code>vm.displayOrNot = function(initialState) {  
+    var currentState = initialState;  
+    return function(value, change) {  
+        if (change) {  
+            currentState = value;  
+        };  
+        var displayProperty = (value == currentState) ? "display:inherit" : "display:none";  
+        return displayProperty;  
+    };  
+}; </code></pre><p></code> </p><p>I decided to apply the <code>currying</code>/<code>partial function</code> technique to provide an auxilliary function that makes things apparent when I am changing the screen. This fucntion was also created as I would occasionally forgot to add true when I meant to change the screen instead of simply check if it should be visible or not. </p><p><code class="javascript"> </p><pre><code>vm.changeScreen = _.partialRight(vm.currentScreen, true); </code></pre><p></code> </p><p>On the view side of things I created a closure for whole UI screens by calling <code>displayOrNot</code> like so </p><p><code class="javascript"> </p><pre><code>vm.currentScreen = vm.displayOrNot("lobby"); </code></pre><p></code> </p><p>Then applied it to the different screens calling the newly created <code>currentScreen</code> function and handing it the name of the screen it represents in the style attribute. For example </p><p><code class="javascript"> </p><pre><code>m("div", {style:app.vm.currentScreen("table")}, [  
+    m("div.row", [  
+        m("div.col-xs-12", [  
+            createCurrentTurnDisplay(),  
+.... </code></pre><p></code> </p><p>One other thing that sets Mithril apart from other client side MVC frameworks is it's use of closures. Within the <code>ViewModel</code> object, I keep a lot of state, particularly for forms. The Mithril <code>m.prop</code> function is a closure that stores  whatever value you initially give it. The closure takes a single optional argument. When it is called without an argument, it returns the value it is currently storing. If it is called with the optional argument, it stores the new value internally then returns the new value. To illustrate </p><p><code class="javscript"> </p><pre><code>//Initial representation  
+vm.name = m.prop("");  
+ 
+vm.name.prop("Bryan") // returns Bryan  
+ 
+vm.name.prop() // returns Bryan again  
+ 
+vm.name.prop("Jeff") // now returns Jeff  
+ 
+vm.name.prop() // Returns Jeff </code></pre><p></code> </p><p>While this may seem counter intuitive at first, it's actually pretty neat when applied to javascript DOM event handlers. The name property I mentioned above is actually used to register the player's nickname upon connection. Utilizing the <code>currying</code>/<code>partial function</code> techique we are able to set the <code>onchange</code> attribute of an <code>&lt;input type="text"&gt;</code> tag to a function that captures it's <code>value</code> attribute. Mithril provides a function called <code>withAttr</code> that facilitates the behavior of binding a function with the value of the html attribute you specify. </p><p><code> </p><pre><code>m("input[type=text]", {onchange: m.withAttr("value", app.vm.name)}) </code></pre><p></code> </p><p>In the code above our <code>vm.name</code> closure is now called with the <code>&lt;input&gt;</code>'s value for an argument. </p><p>Mithril handles redrawing on it's own in a pretty efficient manner. However, there are some occasions in which the coder needs the control when the interface should redraw. While Mithril has a method to directly trigger a redraw, it also provides two methods called <code>m.startComputation</code> and <code>m.endComputation</code> that allows Mithril to decide when to redraw, which is usually much more efficient. I had to use these two methods whenever a web socket message was received. </p><p>Other than that, the single table prototype is fairly straight forward. You can see the progress here (the link has been removed, see the edit notice above). Hopefully I will have completed the multiple table implementation in my next blog post. </p>
+<nav id="article-nav">
+    
+    <a href="/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">Previously on Optimised Bogosort! Adventures In Canvas: Tic-tac-toe and Space Invaders!</a>
+    
+    <br/><br/>
+    
+    <a href="/articles/the_backend_streets_of_hometown_machikoro.html">Next time on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>

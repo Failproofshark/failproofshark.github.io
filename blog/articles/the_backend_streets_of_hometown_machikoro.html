@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: The Backend Streets of Hometown Machikoro</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">The Backend Streets of Hometown Machikoro</h2>
+<div id="article-date">3-8-2015</div>
+<p> </p><p><em> EDIT (03-25-2014) : Due to the fact I have not received any sort of correspondance from IDW Games, I am unable to secure any sort of right to make the boardgame Machikoro available for users online. The code for this project was salvaged and used in a project the same goal of creating a turn-based, multiplayer game with Socket.IO. The write up for the follow-up project, with links to play the game are available <a href="/articles/dots_and_boxes.html">in this artile</a>. The original code for this project has been removed from Github, however the snippets here remain in place since it is not the complete game. </em>  </p><p>In order to make my <a href="/articles/socket_to_me_io.html">single table Machikoro implementation</a> fit to handle multiple game tables at once I had to implement a much more comprehensive backend. Up to this point the backend was just a Socket.IO server that simply echoed messages sent by other users. Furthermore, card and table information was kept in simple, plain old javascript data structures. </p><p>I originally wanted to use Redis for the backend database, however after attempting to model a game table, complete with a player roster and inventory of available cards it was clear given that Redis wasn't the best choice for the job. Instead I decided to use Mongodb as it has support for embedded documents making it easier to keep all related data in one place. I decided to use <a href="http://mongoosejs.com/">Mongoose</a> to interface the Mongodb server. </p><p>The <code>GameTableSchema</code> is perhaps the most important table in the project as it represents a play session. The table contains not only the roster of the players but an inventory of available cards as well as turn order for the game. </p><p>One thing that got a bit hairy is the table joining situation. Machikoro is played with a maximum of four people at a table. Consider the situation where two people click the same "join table" button at the same time for a table who only has one available space left. Who gets in? Checking the table's capcity before joining could be problematic as they would both see "3" at the same time. What we have is a text book race condition. </p><p>The way I decided to deal with it is to simply allow both of them to join the table, then after recording their information, check to see who actually holds the fourth location in the table roster. If their socket id matches the one in the last position that player joins while the other is kicked and simply recieves an error that the table is full. </p><p>In Machikoro, the player tries to be the first to build four special buildings known as landmarks. In order to gain money to build these landmarks, the player must build their city by buying other cards that gains them money based on what number is rolled on the die. Cards are divided into four sub groups, one of which allows certain players to steal money from the person who rolls the die, two gain the player money, and the fourth category which allows a player to take a special action outside of simply collecting money. Given these general categories I created a card Schema that reflect this, but the more interesting aspect about this schema is he effect column. </p><p><code class="javascript"> </p><pre><code>Models.CardSchema = mongoose.Schema({  
+    name: String,  
+    activationNumber: [Number],  
+    establishmentType: String,  
+    buildingType: String,  
+    cost: Number,  
+    description: String,  
+    effect: { method: String,  
+              arguments: [mongoose.Schema.Types.Mixed]  
+            },  
+    quantity: Number  
+}); </code></pre><p></code> </p><p>Instead of storing the card's type, the effect attribute of the schema held a function name correspoding to a <code>GameTableSchema</code> method that could be dispatched with the <code>[]</code> operator. By using the <code>apply</code> function I was able to take the stored list of arguments and make a function call. For example, some cards allow a player to collect 2 coins for every card they own with a bread symbol on it. The effect is multiplied if they have multiple copies of that card particular card. The <code>GameTableSchema</code> has method <code>multCoin</code> that handles this accepts four arguments which is kept as an array in the database. Using a code snippet similar to the block following I am able to add new cards without needing to write new code! </p><p><code class="javascript"> </p><pre><code>GameTableSchema[card.effect.method].apply(this, constructArgumentList(playerIndex, card)); </code></pre><p></code> </p><p>Given the asynchronous nature of Node.js things can get a bit messy on the back end. Having endless chains of callbacks within callbacks can become particularly messy especially if an error were to occur. To help deal with this I decided to use the <a href="https://github.com/petkaantonov/bluebird">Bluebird library</a> to help promisify Mongoose. <a href="https://www.promisejs.org/">Promises</a>, essentially function like normal callbacks in that a function is registered to respond to the fulfillment of an unevaluated value called a promise. A promise provides a special API called "then" which allows the programmer to operate on the newly evaluated value. If the programmer whishes to chain another operation they may simply return another promise in the handler code. Another advantage over normal callbacks is that if a promise were to ever fail or get rejected at anytime in the handler chain it would call the most immediate handler thats equipped to deal with a rejected value (the API may very depending on the implementation you are using). </p><p><code class="javascript"> </p><pre><code>socket.on("buy-card-or-build", function(data) {  
+    Promise.all([GameTable.findOneAsync({socketRoomId: socket.request.session.currentTable}),  
+                 Cards.findOneAsync({name: data.cardName})  
+                ])  
+        .spread(function(table, card) {  
+            var player = _.find(table.players, function(player) { return player.socketId === socket.id; });  
+            var promise = {};  
+            ... </code></pre><p></code> </p><p>Bluebird is especially helpful in that it provides a few ways of handling promises. For example when a user decides to buy a card, I needed to find the table the user is currently located at and the card the person decided to buy. Since these two search operations are independent of each other I use the <code>Promise.all</code> function provided by blue bird to create a promise that returns an array of the two search operations. Once the promise is fulfilled, <em>i.e.</em> mongoose has returned the results of the query, I use the <code>spread</code> function to register an operation to carry out upon fulfilling the promise. </p><p>I hope to finish this project soon. I'm getting a little worried as I still haven't heard back from IDW Games on my query about whether or not I'm allowed to host this project for people to use. In any case stay posted for the finish project and further analysis of the code. </p>
+<nav id="article-nav">
+    
+    <a href="/articles/socket_to_me_io.html">Previously on Optimised Bogosort! Socket To Me IO!</a>
+    
+    <br/><br/>
+    
+    <a href="/articles/dots_and_boxes.html">Next time on Optimised Bogosort! Dots And Boxes!</a>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>

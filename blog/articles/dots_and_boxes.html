@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: Dots And Boxes</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">Dots And Boxes</h2>
+<div id="article-date">3-25-2015</div>
+<p> </p><p>After a few attempts at trying to contact IDW Games about hosting an online version of Machikoro, I decided to spare myself of any possible legal trouble and decided to make an online version of the game called <a href="https://en.wikipedia.org/wiki/Dots_and_Boxes">Dots and Boxes</a> instead (the repo is available <a href="https://github.com/bogosortist/dots-and-boxes">here</a>). Like my Machikoro project, I wanted to have a lobby and allow multiple pairs of people to play the game at the same time. A player may only be at one table at a time. </p><p>For the uninitiated, dots and boxes is a simple pencil and paper game in which two player take turns connecting dots with lines in an attempt complete a square and leave a mark in them showing they have claimed it. Dots may only be connected to other dots that are orthogonally adjacent to them, that is to its immediate top, bottom, left, or right. </p><p>Since Machikoro was basically complete, this project did not take too long to create. There were a few changes however aside from the most obvious change concerning the Models (no need for a card schema, for example). </p><p>On the client side of things I decided to try implementing the screen changing mechanism simply by having a variable in the <code>ViewModel</code> called <code>currentScreen</code> and providing a method available to all views to check whether or not they should be visible. </p><p><code class="javascript"> </p><pre><code>var checkCurrentScreen = function(screenName) {  
+    var displayProperty = (app.ViewModel.currentScreen === screenName) ? "display:inherit" : "display:none";  
+    return displayProperty;  
+}; </code></pre><p></code> </p><p>Given that this game needs a graphical interface, I took some of the code from my <a href="/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">canvas tic-tac-toe project</a> and utilized it here to implement the UI. Using it in the context of Mithril was a bit more complex. </p><p>In order to access the actual element, and in turn, the Canvas API in Mithril I had to utilize the <code>config</code> API which is available to all Mithril views. The <code>config</code> may be used in a number of ways including holding certain configuration information (hence then name) relevant to the view, between redraws. The <code>config</code> function is called with three arguments, the element it's operating on, a boolean representing whether or not the view has been initialized, and a "context" object which holds information to be retained with each redraw. The config code for the canvas view is a bit long so if you want to see it please check out the <a href="https://github.com/bogosortist/dots-and-boxes/blob/master/static/js/views.js">repository page in the views.js file</a>. One caveat is that Mithril strongly suggests <strong>against</strong> modifying the <code>ViewModel</code> from the config, however I found that wrapping the <code>config</code> in some kind closure or some other mechanism to be too cumbersome. </p><p>One of the major back end changes I made was the requirement that the user not only register a username but pass a captcha test via <a href="https://www.google.com/recaptcha/intro/index.html">Google's Recaptcha project</a>. In the back end I verified the Recaptcha response with Node's native <code>Https.get</code> call. Wanting to keep with using promises I promisified it using <a href="https://github.com/petkaantonov/bluebird">Bluebird's Promise constructor</a>. The solution I wrote is based on code found <a href="https://jaxbot.me/articles/new-nocaptcha-recaptcha-with-node-js-express-12-9-2014">here</a> </p><p><code class="javascript"> </p><pre><code>/* http/https get method from node js does not follow standard callback protocol  
+ * Code taken from this blog post https://jaxbot.me/articles/new-nocaptcha-recaptcha-with-node-js-express-12-9-2014  
+ * In short, https.get is basically a http.request call that automically has an 'end' callback and sets  
+ * to get. http.get/http.request return a http.ClientRequest, which implements a readable stream which in return  
+ * waits accepts a signal called data, which in turn holds the response from the server.  
+ */  
+var Https = require("https");  
+var getRequest = Promise.method(function(options) {  
+    return new Promise(function(resolve, reject) {  
+        var request = Https.get(options, function(response) {  
+            response.on('data',function(chunk) {  
+                resolve(JSON.parse(chunk.toString()));  
+            });  
+            response.on('error',function(error) { reject("Could not complete HTTPS request"); });  
+        });  
+    });  
+}); </code></pre><p></code> </p><p>Once the player is registered I setup a user session for them with the help of the <a href="https://www.npmjs.com/package/connect-mongo">connect-mongo library</a>. In order to use sessions with Socket.IO I simply called the <code>use</code> method to tell it to use the connect middleware as it's own middleware. </p><p><code class="javascript"> </p><pre><code>io.use(function(socket, next) {  
+    sessionMiddleware(socket.request, socket.request.res, next);  
+}); </code></pre><p></code> </p><p>In order to allow multiple games to take place simultaneously I had to employ the use of Socket.IO rooms. As their name implies, rooms group users into a namespace by which messages can be emitted to them and them alone. Taking the randomly generated ID each <code>GameTable</code> recieves upon creation, I create a room with the ID as the name of the room. When a player joins the room, I set the name of the room in their session. Emitting signals to just the room is done simply by chaining the <code>to</code> function before the <code>emit</code> function. </p><p>That pretty much wraps up the changes and additions I needed to make this game work. You can play it <a href="http://dotboxes.optimisedbogosort.com/">here</a>. Enjoy! </p>
+<nav id="article-nav">
+    
+    <a href="/articles/the_backend_streets_of_hometown_machikoro.html">Previously on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
+    
+    <br/><br/>
+    
+    <a href="/articles/kuribo_shoe.html">Next time on Optimised Bogosort! Kuribo Shoe!</a>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>

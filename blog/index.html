@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: Static Noise Updates</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">Static Noise Updates</h2>
+<div id="article-date">5-18-2015</div>
+<p> I've made a few updates to my static site generator, <a href="https://github.com/bogosortist/static-noise">Static Noise</a> including an RSS feed generator, as you can see by the addition of the new RSS feed in the navigation links above. Perhaps the most significant update I've made to the code base is the addition of a cache to improve the build process. </p><p>As I have mentioned in a in my <a href="/articles/static_noise.html">initial write up on Static Noise</a>, I wanted a way to cache rendered articles to help improve the speed and efficiency of building the build process. The problem was that I could not find a way to portably retrieve the file metadata, particularly the "last modified" time stamp. After doing a little research, I'm embarrsed to say I completely overlooked the <code>file-write-date</code> which does exactly that, and is a standard function to boot. </p><p>One thing I really like about Lisp is the idea that code is data and data is code. I mentioned how I use a simple s-expression as a method of configuration. Likewise, I decided to store my cache as a simple s-expression and using the <code>print</code> function to write the cache to a file in the blog directory. When the blog is opened via the <code>open-blog</code> function, it looks for a file, aptly named "article-cache.lisp", then proceeds to load a p-list containing rendered article and a date corresponding to the last time they were rendered. Each entry is keyed by the file name of their source code e.g. <code>(:filename1 (:content "foo" :last-modified 1234) :filename2 (:content "bar" :last-modified 234))</code>. </p><p><code class="lisp"> </p><pre><code>(defun retrieve-cached-content (file-path cache)  
+  "Returns a string representing the content of the given file path and a boolean representing whether or not the cache needs to be resaved and, if need be, a new cache. The string value returned is the result of one of three outcomes, first the content is new that does not exist in the cache (which is added to the current cache as a side effect), the content file has been modified since the cached time in which the newly rendered content replaces the old content and the new content is returned, and finally the content exists and is up to date to which the cached content is returned. A possible side effect of this function is that the content and last modified time for the cached content specified by the file-path may be changed if invalidated"  
+  (let* ((current-modified-time (file-write-date file-path))  
+         (cache-keyword (make-keyword (file-namestring file-path)))  
+         (cache-entry (getf cache cache-keyword)))  
+    (if (or (not cache-entry)  
+            (&gt; current-modified-time (getf cache-entry :last-modified)))  
+        (let ((new-data `(:content ,(cadr (multiple-value-list (markdown file-path :stream nil))) :last-modified ,current-modified-time)))  
+          (setf (getf cache cache-keyword) new-data)  
+          (values (getf new-data :content)  
+                  t  
+                  cache))  
+        (values (getf cache-entry :content)  
+                nil)))) </code></pre><p></code> </p><p>Aside from creating the cache one, I needed a facility to retrieve the cached content and determine whether or not the cache should be marked as invalid. In order for the cache to be valid it must contain entries for all the files in the content folder and the modification date for each file must be the same as the last recorded render date. One I noted while implementing this function is that <code>setf</code> does <em>not</em> always modify the data structure it's given when adding a new item to a list. The only time it modifies the data structure in place is if a pair is found. For this reason, I pass back an updated cache when it is found to be invalid, so that which ever function is calling <code>retrieve-cached-content</code> can set whatever reference it's using to the updated cache. </p><p><code class="lisp"> </p><pre><code>(defun render-cached-content (render-function cache-file-name cache listing template blog-directory)  
+  "Render content that may be cached, return a cache which may have been updated, and save the new cache if it proven to be invalid as a side effect. The render-function is a function and the cache-file-name argument should be a string representing the file name that the cache will be written to."  
+  (multiple-value-bind (cache should-write) (funcall render-function cache listing template blog-directory)  
+    (when should-write  
+      (with-open-file (cache-file (merge-pathnames-as-file blog-directory cache-file-name)  
+                                  :direction :output  
+                                  :if-exists :rename-and-delete  
+                                  :if-does-not-exist :create)  
+        (print cache cache-file))  
+      cache))) </code></pre><p></code> </p><p>After modifying <code>render-articles</code> to either retrieve cached content or to rerender the content completely, I modified it to return the cache and a boolean indicating wether or not the cache needs to be rewritten. Seeing that I plan to use caches for pages and blog entries, I decided to create a higher order function to wrap around the normal rendering functions and update the cache file, or write one if it doesn't already exist. </p><p>While I'm pretty happy with the solution, I really want to find a way to use the data produced by the <code>create-article-listing</code> and <code>create-page-listing</code> functions as the data cache. I will return to the problem, as soon as I finish another project I have in the works. </p>
+<nav id="article-nav">
+    
+    <a href="/articles/kuribo_shoe.html">Previously on Optimised Bogosort! Kuribo Shoe!</a>
+    
+    <br/><br/>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>

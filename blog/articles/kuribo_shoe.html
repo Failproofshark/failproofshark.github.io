@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+    <head>
+        <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
+        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        
+        <title>Optimised Bogosort: Kuribo Shoe</title>
+    </head>
+    <body>
+        <header>
+            <div id="title-and-tag">
+                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <span class="muted-text">Who needs quick sort anyway?</span>
+            </div>
+            
+            <nav id="main-nav">
+                <a href="/pages/about.html">About</a>
+                <a href="/archive.html">Archives</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </header>
+
+        <div id="content">
+            
+<h2 class="title">Kuribo Shoe</h2>
+<div id="article-date">4-29-2015</div>
+<p> </p><p>I recently went to my local game store and saw they had a few Famicom games come in. Imports are pretty hard to come by, so whenever I see them around I try to pick them up since shipping usually costs 5 or 6 dollars, even more if it's a bundle of games. As I was picking games from the lot had a bit of a problem remembering which ones I already had. </p><p>To help me avoid picking up a fourth copy of Bomberman 2 I decided to create a simple web application called <a href="https://github.com/bogosortist/kuriboshoe">Kuriboshoe</a>, named after one of my favorite items in Super Mario Bros. 3. I've missed working with Common Lisp quite a bit. Unlike many popular programming languages today, however, Common Lisp doesn't seem to have a strong presence in the web arena. After doing a bit of research I found an interesting looking framework called <a href="http://8arrow.org/caveman/">Caveman 2</a>. </p><p>Caveman 2 is a web framework that is based on <a href="http://8arrow.org/ningle/">Ningle</a> which in turn is based on <a href="http://clacklisp.org/">Clack</a>, all of which were created by <a href="http://8arrow.org/">Eitarow Fukamachi</a>. Caveman 2 is pretty light weight and easy to use. Compared to it's brethren, Caveman 2 is a framework that sits itself between Clack, which is a fairly generalized framework, and Ningle, which prides itself on being a microframework. Caveman 2 provides database integration with <a href="https://github.com/fukamachi/datafly">Datafly</a>, and uses <a href="https://github.com/mmontone/djula">Djula</a> for templating. Many systems Caveman 2 could be changed out with alternative libraries, such as the CL-SQL for the database library or CL-WHO for templating. For this project I decided to use all the defaults and also decided not to set up any models. </p><p>After starting a project with Caveman 2 you are given some project scaffolding and sets up a few things for you. The two files to focus on are the <code>config.lisp</code> file and the <code>web.lisp</code> file both located in the <code>src</code> directory. Templates are kept in the <code>template</code> directory and any static resources you may want to use in your project should go in the <code>static</code> directory. By default, static files are served up by middleware provided by <code>Clack.Middleware.Static</code>. I usually like to keep things I install via bower separate from my the javascript and css files I write. To add another another file to be served by the static middleware I simply had to add the folder in the static middleware's initarg located in the <code>app.lisp</code> file in the root directory (note the <code>/libs/</code> path in the ppcre:scan argument). </p><p><code class="lisp"> </p><pre><code>(builder  
+ (unless (productionp)  
+   (&lt;clack-middleware-static&gt;  
+    :path (lambda (path)  
+            (if (ppcre:scan "^(?:/images/|/css/|/js/|/libs/|/robot\\.txt$|/favicon.ico$)" path)  
+                path  
+                nil))  
+              :root *static-directory*))  
+            .... </code></pre><p></code> </p><p>The <code>productionp</code> function is a predicate that determines whether or not the system is running in production mode (provided by <code>webappname.config</code> package where webappname is the name of your web application). I put this in place because I left the static files to be served out by my web server, but I will talk about that more in a bit. Since we're on the topic of configuration, Caveman 2 utilizes <a href="https://github.com/fukamachi/envy">Envy</a> for its configuration system. Defining a configuration is done in the <code>config.lisp</code> file located in the <code>/src/</code> directory. There's a <code>:common</code> configuration which is merged with all of the other configurations defined below it. In order to switch environments, simply set the <code>APP_ENV</code> environment variable to the name of the configuration you wish to use. For example if you were using SBCL on a unix system you could run <code>APP_ENV=development sbcl</code> to use the development environment. To check if you're configuration has been read you can run the <code>webappname.config:config</code> function and check the environment list that is currently being used. </p><p>Once configured the database I decided to create the admin interface as that is where most of the user interaction is happens. Routes can be added to the application in one of two ways. The first and perhaps easiest is to use the annotation syntax <em>i.e.</em> <code>@defroute</code> followed a function to handle the route. The second method of defining a route with the <code>defroute</code> macro. I chose the latter because I accidentally started with Caveman 1 instead of Caveman 2. </p><p>When it came to authenticating users I wanted several layers of protection, including a lock out mechanism, if a user failed to log in a certain number of times (3 in my case) as well as a Recaptcha to prevent a flood of login attempts by bots. I first looked into using <a href="https://github.com/bogosortist/cl-recaptcha">cl-recaptcha</a> however from what I recall, it didn't support the newest version of Recaptcha. As a result I decided to use <a href="http://www.weitz.de/drakma/">Drakma</a> to make a post request to verify the Recapcha challenge response token. I plan to contribute a patch to cl-recaptcha soon. </p><p><code class="lisp"> </p><pre><code>(defroute ("/admin/verify" :method :post) (&amp;key |username| |password| |g-recaptcha-response|)  
+  (let* ((stream (http-request "https://www.google.com/recaptcha/api/siteverify"  
+                               :method :post  
+                               :parameters `(("secret" . ,(config :secret-key))  
+                                             ("response" . ,|g-recaptcha-response|))  
+                               :want-stream t))  
+         (google-response (progn (setf (flexi-stream-external-format stream) :utf-8)  
+                                 (setf google-response (decode-json stream)))))  
+    (if (cdr (assoc :success google-response))  
+        (if (and (and (stringp |username|) (&gt; (length |password|) 0))  
+                 (and (stringp |username|) (&gt; (length |password|) 0)))  
+            (let ((validation-sql (make-string-output-stream))  
+                  (sanitized-username (sanitize-string |password|))  
+                  (sanitized-password (sanitize-string |password|))  
+... </code></pre><p></code> </p><p>In order to integrate cl-recaptcha I added my <code>site-key</code> and <code>secret-key</code> in the <code>config.lisp</code> file under the <code>:common</code> configuration entry. The request is read into a <a href="http://weitz.de/flexi-streams/">flexi-stream</a>, then decoded the stream and using <code>decode-json</code> from the <code>:datafly</code> package. Note that the recaptcha challenge response could be verified client side as well, via a callback once the captcha is complete. </p><p><code class="lisp"> </p><pre><code> (&lt;clack-middleware-session&gt;  
+  :store (make-instance 'clack.session.store.dbi:&lt;clack-session-store-dbi&gt;  
+                        :connect-args (gametracker.db:connection-settings)))  
+ 
+... </code></pre><p></code> </p><p>Sessions were an important part of this project given the administrative functionality provided. By default sessions are kept in an in-memory sqlite database. I decided to use an RDBMS instead as I was never really sure about the ttl on the session entries. Using an RDBMS instead of sqlite is fairly simple. The first order of business is ensuring you have the <code>clack-session-store-dbi</code> middleware listed as a dependency in your system definition file. Once that is in place you must instantiate the <code>clack-session-store-dbi</code> and pass it to the <code>:store</code> init arg in the <code>clack-middleware-session</code> initialization. Finally your database must have a table named "sessions" structured as documented <a href="http://quickdocs.org/clack/api#system-clack-session-store-dbi">here</a>. </p><p><code class="lisp"> </p><pre><code>(defun create-insert-statement (table-name user-input)  
+  (insert-into table-name  
+               (apply #'set= user-input)))  
+ 
+(defun create-update-statement (table-name user-input id)  
+  (update table-name  
+          (apply #'set= user-input)  
+          (where (:= :id id))))  
+ 
+(defun create-delete-statement (table-name id)  
+  (delete-from table-name  
+    (where (:= :id id)))) </code></pre><p></code> </p><p>Handling the data and CRUD operations on the back end was quite simple with the help of the <a href="https://github.com/fukamachi/sxql">SXQL</a> library. The functions that generate insert, update and deletion all take arguments that limit the range of values they operation much like normal SQL. For crud operations these usually devolve to <code>columnName</code> = <code>someValue</code> and the function that generates those kinds of expressions is the <code>set=</code> function. By naming the form fields on the client side the same as the table columns they represented and using <code>apply</code> on <code>set=</code> I was able to create functions that took care of most of my database access needs. </p><p><code class="lisp"> </p><pre><code>(defun sanitize-string (parameter)  
+  (concatenate 'string (loop for char across parameter  
+                          if (or (char= #\; char)  
+                                 (char= #\' char)  
+                                 (char= #\" char)  
+                                 (char= #\` char))  
+                          collect #\\ and collect char  
+                          else collect char)))  
+ 
+(defun sanitize-input (parameters)  
+  (loop for parameter in parameters  
+     collect (intern (string-upcase (sanitize-string (car parameter))) :keyword)  
+     collect (let ((parameter-value (cdr parameter)))  
+               (cond ((stringp parameter-value) (sanitize-string parameter-value))  
+                     ((symbolp parameter-value) (if (eql :false parameter-value)  
+                                                    0  
+                                                    1))  
+                     (t parameter-value))))) </code></pre><p></code> </p><p>While all strings are quoted by <a href="https://github.com/fukamachi/sxql">SXQL</a> I always like to escape all special SQL characters just to be sure. </p><p>Since many of the operations manipulating the database had required parameters such as the game's or system's name I wrote a small function to check the fields were not left blank. Doing so would result in an error reporting malformed input. When I first started working on this project, boolean values were either "t" or the keyword symbol ":false" for true and false respectively. This changed after an update forcing me to cast boolean values as numbers (0 for false 1 for true) before accepting them. Leaving them out would trigger the <code>has-required-fields-p</code> check to report an error. </p><p>In order to protect certain pages from unauthorized users I created a macro to wrap all of my administration route definitions to report an 304 error if anyone tried to access it prior to signing in. </p><p><code class="lisp"> </p><pre><code>(defroute ("/admin/company/" :method :post) (&amp;key _parsed)  
+  (session-protected-route (:json)  
+    (add-to-table :companies '("name" "ismanufacturer") _parsed))) </code></pre><p></code> </p><p>With all of these nifty little features combined a majority of my route handling code was shortened to three or so lines. Im fairly certain things could've been further simplified by setting up some models, but I will perhaps save that for a future update. </p><p>Djula, is a port of the <a href="https://docs.djangoproject.com/en/1.8/topics/templates/">Django templating</a> library, which made me feel right at home as Django used to be my weapon of choice for web applications. One thing peculiar thing I had to do was bootstrap some data for use on the front end, the system, genre, and company for the various select dropdowns. To do this, I set up a few environment variables with data I had recieved from the database then parsed it in as a regular javascript array in the template code. </p><p><code class="lisp"> </p><pre><code>(defun render-initial-page (template)  
+  (let* ((initial-company-listing)  
+         (initial-genre-listing)  
+         (initial-systems-listing))  
+    (with-connection (db)  
+      (setf initial-company-listing (encode-json-custom (retrieve-all-from-table :companies)))  
+      (setf initial-genre-listing (encode-json-custom (retrieve-all-from-table :genres)))  
+      (setf initial-systems-listing (encode-json-custom (retrieve-all-from-table :systems))))  
+    (render template (list :companies initial-company-listing  
+                           :genres initial-genre-listing  
+                           :systems initial-systems-listing)))) </code></pre><p></code> </p><p>A small note about the <code>encode-json-custom</code> function. While I was deploying this application, Quicklisp downloaded a new version of Caveman 2 along with the <a href="https://github.com/Rudolph-Miller/jonathan">jonathan</a> library which may mean the functions handling encoding and decoding may have changed. Prior to this, I ran across a bug when encoding a query result that returned a list of results containing a single item. This proved to be problematic when the client side expected an array of objects. As such I had created a function to guarantee that a result would always be an array (normally when receiving a result from <code>retrieve-all</code>). I opened an issue on Github, and hope to hear back soon about the matter. </p><p>I decided to use <a href="https://lhorie.github.io/mithril/">Mithril</a> on the front end once again. I've previously used Mithril models as a simple container to represent their backend table counter parts. This time, however, I decided to add the responsibility of syncing their data to the back end making them much more useful. </p><p><code class="javascript"> </p><pre><code>GameTrackerAdmin.Model = function(defaultEmptySet, backsideUrl) {  
+    return function (initialValues) {  
+        if (initialValues) {  
+            this.attributes = (_.isEmpty(initialValues.id)) ? _.extend({id:null}, _.clone(initialValues,true)) : _.clone(initialValues);  
+        } else {  
+            this.attributes = defaultEmptySet;  
+        }  
+ 
+        this.backsideUrl = backsideUrl;  
+ 
+        this.save = function() {  
+            var self = this;  
+            // For backend purposes  
+            return m.request({method: "POST",  
+                              url: self.backsideUrl,  
+                              data: _.omit(self.attributes, "id")  
+                             })  
+                .then(function(response) {  
+                    self.attributes.id = response.newid;  
+                    return response;  
+                });  
+        };  
+ 
+        this.update = function(newAttributes) {  
+            var self = this;  
+            _.forIn(newAttributes, function(value, key) {  
+                self.attributes[key] = value;  
+            });  
+            return m.request({method: "PUT",  
+                              url: self.backsideUrl,  
+                              data: self.attributes  
+                             });  
+        };  
+ 
+        this.remove = function() {  
+            var self = this;  
+            return m.request({method: "DELETE",  
+                              url: self.backsideUrl,  
+                              data: {id: self.attributes.id}});  
+        };  
+ 
+    };  
+}; </code></pre><p></code> </p><p>This simplified a lot of the <code>ViewModel</code> code as I simply had to create a new object then call the save, update, or remove function after populating it with the data I needed. </p><p><code class="javascript"> </p><pre><code>/* Bit of a symbolic manipulation trick here ;). Given that the initialObject and global namespace  
+ * use the same name for genres and companies we simply pass a string, use eval to get the object  
+ * from global namespace and still use it to reference the attribute we want in the initialObject namespace.  
+ */  
+var getRelatedNames = function(collectionName) {  
+    var singularName = (collectionName === "genres") ? "genreId" : "companyId";  
+    return _.map(_.pluck(_.filter(eval(collectionName), function(item) {  
+        return _.contains(_.pluck(ensureArray(initialObject[collectionName]), singularName), item.id);  
+    }),  
+                   "name"), function(item) { return item.replace(/\\/g,''); });  
+};  
+ 
+this.attributes.genres = getRelatedNames("genres");  
+this.attributes.companies = getRelatedNames("companies"); </code></pre><p></code> </p><p>One neat little javascript trick I'm particularly proud off occurs in the client side models side. When loading a game I grab the related genres and companies for a particular game. When I retrieve game information from the serverside I receive two arrays embedded with that data containing the ids of the companies that created and published the game as well as the ids of its genres. I created a function to retrieve the names of those entites from the bootstrapped data, I mentioned earlier, with the use of the eval function to access the correct array of data simply by passing a string. </p><p>Officially, Caveman 2 supports two servers for deployment. The first being <a href="https://github.com/edicl/hunchentoot">Hunchentoot</a> which is a web server written in Common Lisp, and FCGI. However Fukamachi recently released a shiny new web server written in Common Lisp called <a href="https://github.com/fukamachi/woo">Woo</a>. Given that I was born to be wild, I decided to go bleeding edge and use Woo as the application server and have Nginx serve as a forward proxy (and serve my static files). Deploying with Woo is simple. Once you have Woo quickloaded (thank you <a href="http://xach.com/">Xach Beane</a>) simply run the following line </p><p><code class="lisp"> </p><pre><code>(start :server :woo) </code></pre><p></code> </p><p>You could add the <code>:port</code> keyword argument to set it to another port. Caveman 2 also provides a way to start a server via <a href="https://github.com/fukamachi/shelly">Shelly</a> and deploy via the <a href="http://search.cpan.org/~kazuho/Server-Starter-0.26/lib/Server/Starter.pm">start_server</a> Perl module. Given that I'm hosting the application on Ubuntu I'll probably write a service. </p><p>I plan to do a bit more with this system including something to access ebay to get game prices as well as keep me informed on new game deals. I plan on writing a tutorial to help newcomers. There are other web frameworks I would like to check out including <a href="https://common-lisp.net/project/cl-weblocks/">Weblocks</a> and <a href="https://github.com/Shirakumo/radiance">Radiance</a> I just have to think of new web projects to use them in. </p>
+<nav id="article-nav">
+    
+    <a href="/articles/dots_and_boxes.html">Previously on Optimised Bogosort! Dots And Boxes!</a>
+    
+    <br/><br/>
+    
+    <a href="/articles/static_noise_updates.html">Next time on Optimised Bogosort! Static Noise Updates!</a>
+    
+</nav>
+
+        </div>
+
+        <script src="/static/js/highlight/highlight.pack.js"></script>
+        <script>
+            hljs.initHighlightingOnLoad();
+        </script>
+            
+        
+
+        
+        <footer class="muted-text">
+            Optimised Bogosort. Powered by <a href="https://github.com/bogosortist/static-noise">Static Noise</a></a>
+        </footer>        
+    </body>
+</html>
