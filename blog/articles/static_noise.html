@@ -2,23 +2,23 @@
 <html>
     <head>
         <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
-        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
-        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="http://optimisedbogosort.com/blog/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/main.css" rel="stylesheet" type="text/css" />
         
         <title>Optimised Bogosort: Static Noise</title>
     </head>
     <body>
         <header>
             <div id="title-and-tag">
-                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <h1 id="blog-title" class="title"><a href="http://optimisedbogosort.com/blog">Optimised Bogosort</a></h1>
                 <span class="muted-text">Who needs quick sort anyway?</span>
             </div>
             
             <nav id="main-nav">
-                <a href="/pages/about.html">About</a>
-                <a href="/archive.html">Archives</a>
-                <a href="/rss.xml">RSS</a>
+                <a href="http://optimisedbogosort.com/blog/pages/about.html">About</a>
+                <a href="http://optimisedbogosort.com/blog/archive.html">Archives</a>
+                <a href="http://optimisedbogosort.com/blog/rss.xml">RSS</a>
             </nav>
         </header>
 
@@ -29,11 +29,11 @@
  <p>In the winter break following my first term in college, I had suddenly been bitten by the web dev bug. For some odd reason I had wanted to try my hand at coding something for the web space, namely a blog engine. I had grown quite comfortable using Linux as a desktop machine and I felt ready to try tackling the task administrating my own Linux server. I decided to install Debian on the <a href="/articles/the_penguin_the_wizard_and_the_server_rack">old Dell computer my cousin gave me</a>, and configured it as a web server using the (then) new Apache 2.0 and registering a domain using a free Dynamic DNS service. Looking back at it, I was quite lucky I never got a large amount of traffic as violating my ISP's TOS would've left me internetless. </p><p>I wrote my blog engine in PHP as it was gaining a lot of popularity for web based projects due to it's ease of deployment and speed boost thanks to mod_php. The blog engine worked in a very strange way. I didn't know about the text field type in MySQL, so I used the database to keep track of text file locations which essentially read from and inserted the text into a web page. The implementation was crud and naive to say the least, but it worked reliably enough and served me well for quite a while. From there my blog engine went through several iterations, changing languages along the way, from PHP to Python with the help of Django, to being completely replaced by Wordpress, and then back to Python using <a href="http://docs.getpelican.com/en/3.5.0/">Pelican</a>. </p><p>Once again I am moving the contents of this blog to a new engine and once again I have concocted a home grown solution I call <a href="https://github.com/bogosortist/static-noise">Static Noise</a>. Wanting to keep up with all the hip and trendy programmers, I decided to beat the dead horse people so fondly refer to as static site generators. Honestly, I was simply grabbing for project ideas, and while I am planning something a bit more involved, I lack the time to plan and code it due to work and other engagements, You can read more about how to use it on the project's <a href="https://github.com/bogosortist/static-noise">repository page</a>. The rest of this entry is more of a post mortem of the project. </p><p>Given how integral the REPL is to developing software on Common Lisp is, I decided to leave it as something to be used interactively on the REPL. Since I'm using emacs to type the blog up and I usually have SLIME readily open it seemed to be a natural way of doing things. Honestly, the generator is more of a static site creating command language. </p><p>The generator itself, is designed as a pipeline, collecting metadata from the files that make up the page and blog entries, sorting the articles by their creation date, creating slugs for links, and figuring out which article precedes and succeeds it. This data-centric approach makes things a lot to easier to debug and test because each stage has output that can be examined and verified. Thusly, the first order of business in implementing the generator was to find a way to reliably traverse directory trees and manipulate the files contained within them. </p><p>This problem is made slightly complicated in the fact that different implementations of Common Lisp, handle pathnames differently. Luckily this problem, and it's suggest solution, is <a href="http://www.gigamonkeys.com/book/practical-a-portable-pathname-library.html">very well documented</a>, and even better, has been made into a nice little library called <a href="http://weitz.de/cl-fad/">CL-FAD</a>. </p><p>CL-FAD provides many convenient methods to merge pathnames, check for a file's existence, to deleting whole directory trees. One thing CL-FAD does not provide however, is a way to copy whole directories. This was easy to get around however, as it provides a neat <a href="https://en.wikipedia.org/wiki/Higher-order_function">higher order function</a> called <code>walk-directory</code> which allows you to execute a function on every file in a directory tree. Using this, combined with the <code>copy-file</code> function I created a utility function to copy a whole directory easily. I'll probably fork CL-FAD and propose this function as a feature whenever I muster up enough courage to contribute (or when I have time anyhow). </p><p>As I mentioned previously, I wanted to use metadata to help describe blog entries/articles and pages instead of relying on file naming conventions. Given the old Lisp adage of "code is data and data is code", I decided on using a native Lisp data structure, the property list, to hold the data. The metadata, would be placed as the first line in the file which would be parsed during rendering by the markdown parser. While the <a href="https://common-lisp.net/project/cl-markdown/docs/user-guide.html">markdown parser</a> I chose provides a way to extend it's capabilities, I couldn't find a way to reliably pass back data along with what was rendered. As such I had to parse the metadata first, then write an extention to ignore the line containing the metadata. Without it the parser would output a blank paragraph and cause weird formatting issues. </p><p>One thing I would like to improve is how the <code>render-blog</code> function determines what to render and what to leave alone. As a user create more and more blog posts it would be nice to determine which files have been updated and just re-render those. Keeping a list of rendered entries and when they were last rendered is easy enough given all I would have to do is have the <code>print</code> function write the article metadata to a file, but having a consistent, cross platform way of accessing the modification date on a file may prove to be a bit more difficult. From the small amount of research I did, I only found a way to access unix file metadata in SBCL. </p><p>Overall I am happy with how the project turned out and will be adding to the code base as time goes on. </p>
 <nav id="article-nav">
     
-    <a href="/articles/the_penguin_the_wizard_and_the_server_rack.html">Previously on Optimised Bogosort! The Penguin, the Wizard, and the Server Rack!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/the_penguin_the_wizard_and_the_server_rack.html">Previously on Optimised Bogosort! The Penguin, the Wizard, and the Server Rack!</a>
     
     <br/><br/>
     
-    <a href="/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">Next time on Optimised Bogosort! Adventures In Canvas: Tic-tac-toe and Space Invaders!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">Next time on Optimised Bogosort! Adventures In Canvas: Tic-tac-toe and Space Invaders!</a>
     
 </nav>
 

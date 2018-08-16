@@ -2,23 +2,23 @@
 <html>
     <head>
         <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
-        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
-        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="http://optimisedbogosort.com/blog/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/main.css" rel="stylesheet" type="text/css" />
         
         <title>Optimised Bogosort: Kuribo Shoe</title>
     </head>
     <body>
         <header>
             <div id="title-and-tag">
-                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <h1 id="blog-title" class="title"><a href="http://optimisedbogosort.com/blog">Optimised Bogosort</a></h1>
                 <span class="muted-text">Who needs quick sort anyway?</span>
             </div>
             
             <nav id="main-nav">
-                <a href="/pages/about.html">About</a>
-                <a href="/archive.html">Archives</a>
-                <a href="/rss.xml">RSS</a>
+                <a href="http://optimisedbogosort.com/blog/pages/about.html">About</a>
+                <a href="http://optimisedbogosort.com/blog/archive.html">Archives</a>
+                <a href="http://optimisedbogosort.com/blog/rss.xml">RSS</a>
             </nav>
         </header>
 
@@ -150,11 +150,11 @@ this.attributes.genres = getRelatedNames("genres");
 this.attributes.companies = getRelatedNames("companies"); </code></pre><p></code> </p><p>One neat little javascript trick I'm particularly proud off occurs in the client side models side. When loading a game I grab the related genres and companies for a particular game. When I retrieve game information from the serverside I receive two arrays embedded with that data containing the ids of the companies that created and published the game as well as the ids of its genres. I created a function to retrieve the names of those entites from the bootstrapped data, I mentioned earlier, with the use of the eval function to access the correct array of data simply by passing a string. </p><p>Officially, Caveman 2 supports two servers for deployment. The first being <a href="https://github.com/edicl/hunchentoot">Hunchentoot</a> which is a web server written in Common Lisp, and FCGI. However Fukamachi recently released a shiny new web server written in Common Lisp called <a href="https://github.com/fukamachi/woo">Woo</a>. Given that I was born to be wild, I decided to go bleeding edge and use Woo as the application server and have Nginx serve as a forward proxy (and serve my static files). Deploying with Woo is simple. Once you have Woo quickloaded (thank you <a href="http://xach.com/">Xach Beane</a>) simply run the following line </p><p><code class="lisp"> </p><pre><code>(start :server :woo) </code></pre><p></code> </p><p>You could add the <code>:port</code> keyword argument to set it to another port. Caveman 2 also provides a way to start a server via <a href="https://github.com/fukamachi/shelly">Shelly</a> and deploy via the <a href="http://search.cpan.org/~kazuho/Server-Starter-0.26/lib/Server/Starter.pm">start_server</a> Perl module. Given that I'm hosting the application on Ubuntu I'll probably write a service. </p><p>I plan to do a bit more with this system including something to access ebay to get game prices as well as keep me informed on new game deals. I plan on writing a tutorial to help newcomers. There are other web frameworks I would like to check out including <a href="https://common-lisp.net/project/cl-weblocks/">Weblocks</a> and <a href="https://github.com/Shirakumo/radiance">Radiance</a> I just have to think of new web projects to use them in. </p>
 <nav id="article-nav">
     
-    <a href="/articles/dots_and_boxes.html">Previously on Optimised Bogosort! Dots And Boxes!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/dots_and_boxes.html">Previously on Optimised Bogosort! Dots And Boxes!</a>
     
     <br/><br/>
     
-    <a href="/articles/static_noise_updates.html">Next time on Optimised Bogosort! Static Noise Updates!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/static_noise_updates.html">Next time on Optimised Bogosort! Static Noise Updates!</a>
     
 </nav>
 

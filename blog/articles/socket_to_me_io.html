@@ -2,23 +2,23 @@
 <html>
     <head>
         <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
-        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
-        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="http://optimisedbogosort.com/blog/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/main.css" rel="stylesheet" type="text/css" />
         
         <title>Optimised Bogosort: Socket To Me IO</title>
     </head>
     <body>
         <header>
             <div id="title-and-tag">
-                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <h1 id="blog-title" class="title"><a href="http://optimisedbogosort.com/blog">Optimised Bogosort</a></h1>
                 <span class="muted-text">Who needs quick sort anyway?</span>
             </div>
             
             <nav id="main-nav">
-                <a href="/pages/about.html">About</a>
-                <a href="/archive.html">Archives</a>
-                <a href="/rss.xml">RSS</a>
+                <a href="http://optimisedbogosort.com/blog/pages/about.html">About</a>
+                <a href="http://optimisedbogosort.com/blog/archive.html">Archives</a>
+                <a href="http://optimisedbogosort.com/blog/rss.xml">RSS</a>
             </nav>
         </header>
 
@@ -51,11 +51,11 @@ vm.name.prop("Jeff") // now returns Jeff
 vm.name.prop() // Returns Jeff </code></pre><p></code> </p><p>While this may seem counter intuitive at first, it's actually pretty neat when applied to javascript DOM event handlers. The name property I mentioned above is actually used to register the player's nickname upon connection. Utilizing the <code>currying</code>/<code>partial function</code> techique we are able to set the <code>onchange</code> attribute of an <code>&lt;input type="text"&gt;</code> tag to a function that captures it's <code>value</code> attribute. Mithril provides a function called <code>withAttr</code> that facilitates the behavior of binding a function with the value of the html attribute you specify. </p><p><code> </p><pre><code>m("input[type=text]", {onchange: m.withAttr("value", app.vm.name)}) </code></pre><p></code> </p><p>In the code above our <code>vm.name</code> closure is now called with the <code>&lt;input&gt;</code>'s value for an argument. </p><p>Mithril handles redrawing on it's own in a pretty efficient manner. However, there are some occasions in which the coder needs the control when the interface should redraw. While Mithril has a method to directly trigger a redraw, it also provides two methods called <code>m.startComputation</code> and <code>m.endComputation</code> that allows Mithril to decide when to redraw, which is usually much more efficient. I had to use these two methods whenever a web socket message was received. </p><p>Other than that, the single table prototype is fairly straight forward. You can see the progress here (the link has been removed, see the edit notice above). Hopefully I will have completed the multiple table implementation in my next blog post. </p>
 <nav id="article-nav">
     
-    <a href="/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">Previously on Optimised Bogosort! Adventures In Canvas: Tic-tac-toe and Space Invaders!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/adventures_in_canvas_tictactoe_and_space_invaders.html">Previously on Optimised Bogosort! Adventures In Canvas: Tic-tac-toe and Space Invaders!</a>
     
     <br/><br/>
     
-    <a href="/articles/the_backend_streets_of_hometown_machikoro.html">Next time on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/the_backend_streets_of_hometown_machikoro.html">Next time on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
     
 </nav>
 

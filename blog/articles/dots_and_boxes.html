@@ -2,23 +2,23 @@
 <html>
     <head>
         <link href="http://fonts.googleapis.com/css?family=Merriweather:400,400italic,700,700italic|Arimo:400,400italic,700,700italic|Anonymous+Pro" rel="stylesheet" type="text/css">        
-        <link href="/static/css/normalize.css" rel="stylesheet" type="text/css" />
-        <link rel="stylesheet" href="/static/js/highlight/styles/solarized_light.css" type="text/css" />
-        <link href="/static/css/main.css" rel="stylesheet" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/normalize.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="http://optimisedbogosort.com/blog/static/js/highlight/styles/solarized_light.css" type="text/css" />
+        <link href="http://optimisedbogosort.com/blog/static/css/main.css" rel="stylesheet" type="text/css" />
         
         <title>Optimised Bogosort: Dots And Boxes</title>
     </head>
     <body>
         <header>
             <div id="title-and-tag">
-                <h1 id="blog-title" class="title"><a href="/">Optimised Bogosort</a></h1>
+                <h1 id="blog-title" class="title"><a href="http://optimisedbogosort.com/blog">Optimised Bogosort</a></h1>
                 <span class="muted-text">Who needs quick sort anyway?</span>
             </div>
             
             <nav id="main-nav">
-                <a href="/pages/about.html">About</a>
-                <a href="/archive.html">Archives</a>
-                <a href="/rss.xml">RSS</a>
+                <a href="http://optimisedbogosort.com/blog/pages/about.html">About</a>
+                <a href="http://optimisedbogosort.com/blog/archive.html">Archives</a>
+                <a href="http://optimisedbogosort.com/blog/rss.xml">RSS</a>
             </nav>
         </header>
 
@@ -50,11 +50,11 @@ var getRequest = Promise.method(function(options) {
 }); </code></pre><p></code> </p><p>In order to allow multiple games to take place simultaneously I had to employ the use of Socket.IO rooms. As their name implies, rooms group users into a namespace by which messages can be emitted to them and them alone. Taking the randomly generated ID each <code>GameTable</code> recieves upon creation, I create a room with the ID as the name of the room. When a player joins the room, I set the name of the room in their session. Emitting signals to just the room is done simply by chaining the <code>to</code> function before the <code>emit</code> function. </p><p>That pretty much wraps up the changes and additions I needed to make this game work. You can play it <a href="http://dotboxes.optimisedbogosort.com/">here</a>. Enjoy! </p>
 <nav id="article-nav">
     
-    <a href="/articles/the_backend_streets_of_hometown_machikoro.html">Previously on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/the_backend_streets_of_hometown_machikoro.html">Previously on Optimised Bogosort! The Backend Streets of Hometown Machikoro!</a>
     
     <br/><br/>
     
-    <a href="/articles/kuribo_shoe.html">Next time on Optimised Bogosort! Kuribo Shoe!</a>
+    <a href="http://optimisedbogosort.com/blog/articles/kuribo_shoe.html">Next time on Optimised Bogosort! Kuribo Shoe!</a>
     
 </nav>
 
