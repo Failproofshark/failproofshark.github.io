@@ -1,0 +1,80 @@
+==================================================================
+https://keybase.io/bryanbaraoidan
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://optimisedbogosort.com
+  * I am bryanbaraoidan (https://keybase.io/bryanbaraoidan) on keybase.
+  * I have a public key with fingerprint FF8D 4AE0 6B38 06DA E702  0CF4 41D6 9833 9441 F72E
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "0101de4bc9370ed0e726f397b51abc2ca46966037833c187c9abbe06627dec01fc880a",
+      "fingerprint": "ff8d4ae06b3806dae7020cf441d698339441f72e",
+      "host": "keybase.io",
+      "key_id": "41d698339441f72e",
+      "kid": "0101de4bc9370ed0e726f397b51abc2ca46966037833c187c9abbe06627dec01fc880a",
+      "uid": "3e95eafbe9f0e2174387bc521c0c7a19",
+      "username": "bryanbaraoidan"
+    },
+    "merkle_root": {
+      "ctime": 1584074342,
+      "hash_meta": "f639c6c2afccf5f107562d4af5d093df23df671be4de3ce6944d6f3c6c954b17",
+      "seqno": 15339570
+    },
+    "revoke": {
+      "sig_ids": [
+        "36ecbf34010ba167d222174791cf202a681beeff0b93cde28a9079ce396d84310f"
+      ]
+    },
+    "service": {
+      "hostname": "optimisedbogosort.com",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 1
+  },
+  "ctime": 1584074374,
+  "expire_in": 157680000,
+  "prev": "98280435352481d39e1af5aaeb0ed7ddfd3907753d7c2a2f5f5da363ab9a35d8",
+  "seqno": 9,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+-----BEGIN PGP MESSAGE-----
+
+owGtk22IFVUYx+91d9O9rSIYvVi74HxRZFvOnDNzzpyLvezSloYfCirMXu6el+fs
+ne7unbszszcv64ZQvmRsBJkbrl/sg0oGmiBE9MESodQWioplK13BLCtWo0I/GNuZ
+RQmijw0MM3P4P//n//zmnDcWN+UW5bu/eZvs6r7alT99Seaeryw5OuLISDec4ohT
+gfkHDGhI0lIl1E7RQS5yNXhSccIQaAQMU0M4k74rpMJKeJRTiggLCFFuwBQXUgKi
+FDMNCrlGBQESTqdjwmo/xLU4rKbW1phAe8LqJAkQ1QIYwkgZz3M15daK2zfDMNjC
+cpRkFTacFAl0hZFdsx+l+Xj/of+fcw/P2xHgPggjgRsE2GUeCZhUPnYVUky4PBMm
+EFfFIFi1jBuiKkUsolCLqjPa6QxCXBmAUhxFaYZYpWEmdP3AQ9bLw3ZMkZRLg5CK
+jA4lXFGFhVHK+MZFzKfY8jK+Rpxog+1NmSvB00AUUDu9ttPZEu570mU2TQJD1Sjr
+YNn4DNkIMdSjCmTdk7Df0kuc49uKzziEgpKGeBaYFC5lGuNsPsZdZTDCgga2DxiD
+JCdKAw4ER4wrIJzqwCMuMs5zo1m/uB6qefvsh90AEdXsoGECWkb9URLFaZeKBm26
+WhylkYoGrKScprWkmDFKG7Ws5kWQpRtuJRlWtd03tqIOcRJGVTuRVf4LH/M6HdhU
+C2MohZnCZzRA9sr6QN1a8gAHyCM+8bEXuJpwcC1LIUDarcG0NnYJMeYTzSx0bJH7
+WhBKhOSC+Dr4hye3MUW/tbQMqyIdjsEZLbyaJ825/KJc++0rmufGHp2pBLdM/7ig
+7Y+bR61lQXbOcoXWpTdXDj2ycO6JtasfOrPw3cOv7H753B3hliUzmx4/39104uj4
+p3fdu3N82YGPgJo/W8cv/9K7cZ0/1jdcwW/1XH+n9gX/eE3lyXyj+cjEqW/7Do1d
+3rvhu8/unF07tWzNa61zXfXNxw7u+WRysj46sLrloBpZn58+tuqkPtf3wPJrr+94
+duOW94f2rVTFyQ1Ph/cUOlpa1i/f9337mfKtd399Af818lvThR1Ozw9J1+y1zx/7
+qnz/3t2XxNb73vx9VX/vh0tPTZ2cxbjQMbM/eG9z29T5E19e7dnaGUxfHNruLG5v
+dh/8Fe1ft+2F4bMrCvAzmsB7tp/OTfR0Pnzx+spdwQdnr7T1vnTlqZ0dfY2fjuc7
+Dtz2Nw==
+=zKfU
+-----END PGP MESSAGE-----
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/bryanbaraoidan
+
+==================================================================
